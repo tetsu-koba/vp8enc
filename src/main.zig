@@ -16,10 +16,10 @@ pub fn main() !void {
     var outfile = try std.fs.cwd().createFile("output.ivf", .{});
     defer outfile.close();
 
-    const width: u32 = 640;
-    const height: u32 = 480;
+    const width: u32 = 160;
+    const height: u32 = 120;
     const bitrate: u32 = 1000;
-    const fps: u32 = 30;
+    const fps: u32 = 15;
     const keyframe_interval: u32 = 60;
 
     const ivf_header = IVF.IVFHeader{
@@ -35,6 +35,7 @@ pub fn main() !void {
         .unused = 0,
     };
     var ivf_writer = try IVF.IVFWriter.init(outfile, &ivf_header);
+    defer ivf_writer.deinit();
 
     var cfg: vpx.vpx_codec_enc_cfg_t = undefined;
     if (vpx.vpx_codec_enc_config_default(vpx.vpx_codec_vp8_cx(), &cfg, 0) != 0) {
@@ -63,7 +64,7 @@ pub fn main() !void {
 
     var frame_count: u32 = 0;
     while (true) {
-        if (try read_yuv(raw, yuv_file)) {
+        if (!try read_yuv(raw, yuv_file)) {
             break;
         }
 
@@ -72,8 +73,6 @@ pub fn main() !void {
             return error.EncodingError;
         }
 
-        //var iter: ?*vpx.vpx_codec_iter_t = null;
-        //var iter: [*c]vpx.vpx_codec_iter_t = null;
         var iter: ?*usize = null;
         while (true) {
             const pkt = vpx.vpx_codec_get_cx_data(&codec, @ptrCast([*c]?*const anyopaque, &iter));
@@ -82,8 +81,8 @@ pub fn main() !void {
             const p = pkt.*;
             if (p.kind == vpx.VPX_CODEC_CX_FRAME_PKT) {
                 const frame_size = p.data.frame.sz;
+                // If you need keyframe
                 // const keyframe = (p.data.frame.flags & vpx.VPX_FRAME_IS_KEY) != 0;
-                // _ = keyframe;
                 try ivf_writer.writeIVFFrame(@ptrCast([*]const u8, p.data.frame.buf)[0..frame_size], frame_count);
                 frame_count += 1;
             }
@@ -97,13 +96,13 @@ fn read_yuv(raw: *vpx.struct_vpx_image, yuv_file: std.fs.File) !bool {
     const u_size = @intCast(usize, r.stride[1]) * @intCast(usize, r.d_h) / 2;
     const v_size = @intCast(usize, r.stride[2]) * @intCast(usize, r.d_h) / 2;
     if (y_size != try yuv_file.readAll(@ptrCast([*]u8, r.planes[0])[0..y_size])) {
-        return true;
+        return false;
     }
     if (u_size != try yuv_file.readAll(@ptrCast([*]u8, r.planes[1])[0..u_size])) {
-        return true;
+        return false;
     }
     if (v_size != try yuv_file.readAll(@ptrCast([*]u8, r.planes[2])[0..v_size])) {
-        return true;
+        return false;
     }
-    return false;
+    return true;
 }
