@@ -1,5 +1,5 @@
 const std = @import("std");
-const vpx = @cImport({
+const c = @cImport({
     @cInclude("vpx/vpx_encoder.h");
     @cInclude("vpx/vp8cx.h");
 });
@@ -37,8 +37,8 @@ pub fn main() !void {
     var ivf_writer = try IVF.IVFWriter.init(outfile, &ivf_header);
     defer ivf_writer.deinit();
 
-    var cfg: vpx.vpx_codec_enc_cfg_t = undefined;
-    if (vpx.vpx_codec_enc_config_default(vpx.vpx_codec_vp8_cx(), &cfg, 0) != 0) {
+    var cfg: c.vpx_codec_enc_cfg_t = undefined;
+    if (c.vpx_codec_enc_config_default(c.vpx_codec_vp8_cx(), &cfg, 0) != 0) {
         std.debug.print("Error getting default configuration\n", .{});
         return error.DefaultConfigurationError;
     }
@@ -52,15 +52,15 @@ pub fn main() !void {
     cfg.kf_min_dist = keyframe_interval;
     cfg.kf_max_dist = keyframe_interval;
 
-    var codec: vpx.vpx_codec_ctx_t = undefined;
-    if (vpx.vpx_codec_enc_init(&codec, vpx.vpx_codec_vp8_cx(), &cfg, 0) != 0) {
+    var codec: c.vpx_codec_ctx_t = undefined;
+    if (c.vpx_codec_enc_init(&codec, c.vpx_codec_vp8_cx(), &cfg, 0) != 0) {
         std.debug.print("Error initializing codec\n", .{});
         return error.CodecInitializationError;
     }
-    defer _ = vpx.vpx_codec_destroy(&codec);
+    defer _ = c.vpx_codec_destroy(&codec);
 
-    var raw = vpx.vpx_img_alloc(null, vpx.VPX_IMG_FMT_I420, width, height, 1);
-    defer _ = vpx.vpx_img_free(raw);
+    var raw = c.vpx_img_alloc(null, c.VPX_IMG_FMT_I420, width, height, 1);
+    defer _ = c.vpx_img_free(raw);
 
     var frame_count: u32 = 0;
     while (true) {
@@ -68,29 +68,30 @@ pub fn main() !void {
             break;
         }
 
-        if (vpx.vpx_codec_encode(&codec, raw, frame_count, 1, 0, vpx.VPX_DL_REALTIME) != 0) {
+        if (c.vpx_codec_encode(&codec, raw, frame_count, 1, 0, c.VPX_DL_REALTIME) != 0) {
             std.debug.print("Error encoding frame\n", .{});
             return error.EncodingError;
         }
 
         var iter: ?*usize = null;
         while (true) {
-            const pkt = vpx.vpx_codec_get_cx_data(&codec, @ptrCast([*c]?*const anyopaque, &iter));
+            const pkt = c.vpx_codec_get_cx_data(&codec, @ptrCast([*c]?*const anyopaque, &iter));
             if (pkt == null) break;
 
             const p = pkt.*;
-            if (p.kind == vpx.VPX_CODEC_CX_FRAME_PKT) {
-                const frame_size = p.data.frame.sz;
-                // If you need keyframe
-                // const keyframe = (p.data.frame.flags & vpx.VPX_FRAME_IS_KEY) != 0;
-                try ivf_writer.writeIVFFrame(@ptrCast([*]const u8, p.data.frame.buf)[0..frame_size], frame_count);
-                frame_count += 1;
+            if (p.kind != c.VPX_CODEC_CX_FRAME_PKT) {
+                continue;
             }
+            const frame_size = p.data.frame.sz;
+            // If you need keyframe
+            // const keyframe = (p.data.frame.flags & c.VPX_FRAME_IS_KEY) != 0;
+            try ivf_writer.writeIVFFrame(@ptrCast([*]const u8, p.data.frame.buf)[0..frame_size], frame_count);
+            frame_count += 1;
         }
     }
 }
 
-fn read_yuv(raw: *vpx.struct_vpx_image, yuv_file: std.fs.File) !bool {
+fn read_yuv(raw: *c.struct_vpx_image, yuv_file: std.fs.File) !bool {
     const r = raw.*;
     const y_size = @intCast(usize, r.stride[0]) * @intCast(usize, r.d_h);
     const u_size = @intCast(usize, r.stride[1]) * @intCast(usize, r.d_h) / 2;
