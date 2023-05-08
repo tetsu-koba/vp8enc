@@ -2,22 +2,16 @@ const std = @import("std");
 const IVF = @import("ivf.zig");
 const VP8Enc = @import("vp8enc.zig").VP8Enc;
 
-pub fn main() !void {
+pub fn I4202Vp8(input_file: []const u8, output_file: []const u8, width: u16, height: u16, framerate: u32, bitrate: u32, keyframe_interval: u32) !void {
     const alc = std.heap.page_allocator;
 
-    var yuv_file = try std.fs.cwd().openFile("input.yuv", .{});
+    var yuv_file = try std.fs.cwd().openFile(input_file, .{});
     defer yuv_file.close();
 
-    var outfile = try std.fs.cwd().createFile("output.ivf", .{});
+    var outfile = try std.fs.cwd().createFile(output_file, .{});
     defer outfile.close();
 
-    const width: u32 = 160;
-    const height: u32 = 120;
-    const bitrate: u32 = 1000;
-    const framerate: u32 = 15;
     const time_scale: u32 = 1;
-    const keyframe_interval: u32 = 60;
-
     const ivf_header = IVF.IVFHeader{
         .signature = .{ 'D', 'K', 'I', 'F' },
         .version = 0,
@@ -49,4 +43,25 @@ pub fn main() !void {
         try ivf_writer.writeIVFFrame(buf, frame_count);
         frame_count += 1;
     }
+}
+
+pub fn main() !void {
+    const usage = "Usage: {s} input_file output_file width height framerate kbps keyframe_interval\n";
+    const alc = std.heap.page_allocator;
+    const args = try std.process.argsAlloc(alc);
+    defer std.process.argsFree(alc, args);
+
+    if (args.len < 8) {
+        std.debug.print(usage, .{args[0]});
+        std.os.exit(1);
+    }
+    const input_file = std.mem.sliceTo(args[1], 0);
+    const output_file = std.mem.sliceTo(args[2], 0);
+    const width = try std.fmt.parseInt(u16, args[3], 10);
+    const height = try std.fmt.parseInt(u16, args[4], 10);
+    const framerate = try std.fmt.parseInt(u32, args[5], 10);
+    const bitrate = try std.fmt.parseInt(u32, args[6], 10) * 1000;
+    const keyframe_interval = try std.fmt.parseInt(u32, args[7], 10);
+
+    try I4202Vp8(input_file, output_file, width, height, framerate, bitrate, keyframe_interval);
 }
