@@ -40,7 +40,15 @@ pub fn I4202Vp8(input_file: []const u8, output_file: []const u8, width: u32, hei
             break;
         }
         const buf = try vp8enc.encode(frame_count);
-        try ivf_writer.writeIVFFrame(buf, frame_count);
+        ivf_writer.writeIVFFrame(buf, frame_count) catch |err| {
+            switch (err) {
+                error.BrokenPipe => {},
+                else => {
+                    std.log.err("frameHandle: {s}", .{@errorName(err)});
+                },
+            }
+            break;
+        };
         frame_count += 1;
     }
 }
