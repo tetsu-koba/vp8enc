@@ -68,7 +68,7 @@ pub fn main() !void {
     const width = try std.fmt.parseInt(u32, args[3], 10);
     const height = try std.fmt.parseInt(u32, args[4], 10);
     const framerate = try std.fmt.parseInt(u32, args[5], 10);
-    const bitrate = try std.fmt.parseInt(u32, args[6], 10) * 1000;
+    const bitrate = try std.fmt.parseInt(u32, args[6], 10);
     const keyframe_interval = try std.fmt.parseInt(u32, args[7], 10);
 
     try I4202Vp8(input_file, output_file, width, height, framerate, bitrate, keyframe_interval);
