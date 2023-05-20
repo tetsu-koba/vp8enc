@@ -26,7 +26,7 @@ fn encode(input_file: []const u8, output_file: []const u8) !void {
     const height: u32 = 120;
     const bitrate: u32 = 1000;
     const framerate: u32 = 15;
-    const time_scale: u32 = 1;
+    const framerate_den: u32 = 1;
     const keyframe_interval: u32 = 60;
 
     const ivf_header = IVF.IVFHeader{
@@ -36,8 +36,8 @@ fn encode(input_file: []const u8, output_file: []const u8) !void {
         .fourcc = .{ 'V', 'P', '8', '0' }, //"VP80",
         .width = width,
         .height = height,
-        .frame_rate = framerate,
-        .time_scale = time_scale,
+        .framerate_num = framerate,
+        .framerate_den = framerate_den,
         .num_frames = 0,
         .unused = 0,
     };
@@ -48,7 +48,7 @@ fn encode(input_file: []const u8, output_file: []const u8) !void {
     var yuv_buf = try alc.alloc(u8, yuv_size);
     defer alc.free(yuv_buf);
 
-    var vp8enc = try VP8Enc.init(width, height, framerate, time_scale, bitrate, keyframe_interval, yuv_buf);
+    var vp8enc = try VP8Enc.init(width, height, framerate, framerate_den, bitrate, keyframe_interval, yuv_buf);
     defer vp8enc.deinit();
 
     var frame_count: u32 = 0;
@@ -71,8 +71,8 @@ fn checkIVF(filename: []const u8) !void {
     try testing.expectEqualSlices(u8, &reader.header.fourcc, "VP80");
     try testing.expect(reader.header.width == 160);
     try testing.expect(reader.header.height == 120);
-    try testing.expect(reader.header.frame_rate == 15);
-    try testing.expect(reader.header.time_scale == 1);
+    try testing.expect(reader.header.framerate_num == 15);
+    try testing.expect(reader.header.framerate_den == 1);
     try testing.expect(reader.header.num_frames == 75);
 
     var frame_index: usize = 0;

@@ -7,8 +7,8 @@ const c = @cImport({
 pub const VP8Enc = struct {
     width: u32,
     height: u32,
-    framerate: u32,
-    time_scale: u32,
+    framerate_num: u32,
+    framerate_den: u32,
     bitrate: u32,
     keyframe_interval: u32,
     codec: c.vpx_codec_ctx_t,
@@ -19,8 +19,8 @@ pub const VP8Enc = struct {
     pub fn init(
         width: u32,
         height: u32,
-        framerate: u32,
-        time_scale: u32,
+        framerate_num: u32,
+        framerate_den: u32,
         bitrate: u32,
         keyframe_interval: u32,
         yuv_buf: []u8,
@@ -28,8 +28,8 @@ pub const VP8Enc = struct {
         var self = VP8Enc{
             .width = width,
             .height = height,
-            .framerate = framerate,
-            .time_scale = time_scale,
+            .framerate_num = framerate_num,
+            .framerate_den = framerate_den,
             .bitrate = bitrate,
             .keyframe_interval = keyframe_interval,
             .codec = undefined,
@@ -44,8 +44,8 @@ pub const VP8Enc = struct {
         cfg.rc_target_bitrate = bitrate;
         cfg.g_w = width;
         cfg.g_h = height;
-        cfg.g_timebase.num = 1;
-        cfg.g_timebase.den = @intCast(c_int, framerate);
+        cfg.g_timebase.num = @intCast(c_int, framerate_den);
+        cfg.g_timebase.den = @intCast(c_int, framerate_num);
         cfg.g_error_resilient = 1;
         cfg.kf_min_dist = keyframe_interval;
         cfg.kf_max_dist = keyframe_interval;
