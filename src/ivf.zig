@@ -95,7 +95,7 @@ pub const IVFWriter = struct {
             return error.IvfFormat;
         }
         // Assuming the host is little endian
-        try self.writer.writeAll(@ptrCast([*]const u8, header)[0..@sizeOf(IVFHeader)]);
+        try self.writer.writeAll(@as([*]const u8, @ptrCast(header))[0..@sizeOf(IVFHeader)]);
         return self;
     }
 
@@ -113,7 +113,7 @@ pub const IVFWriter = struct {
     }
 
     pub fn writeIVFFrame(self: *Self, frame: []const u8, timestamp: u64) !void {
-        try self.writer.writeIntLittle(u32, @truncate(u32, frame.len));
+        try self.writer.writeIntLittle(u32, @as(u32, @truncate(frame.len)));
         try self.writer.writeIntLittle(u64, timestamp);
         try self.writer.writeAll(frame);
         self.frame_count += 1;

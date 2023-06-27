@@ -44,8 +44,8 @@ pub const VP8Enc = struct {
         cfg.rc_target_bitrate = bitrate;
         cfg.g_w = width;
         cfg.g_h = height;
-        cfg.g_timebase.num = @intCast(c_int, framerate_den);
-        cfg.g_timebase.den = @intCast(c_int, framerate_num);
+        cfg.g_timebase.num = @intCast(framerate_den);
+        cfg.g_timebase.den = @intCast(framerate_num);
         cfg.g_error_resilient = 1;
         cfg.kf_min_dist = keyframe_interval;
         cfg.kf_max_dist = keyframe_interval;
@@ -54,7 +54,7 @@ pub const VP8Enc = struct {
             std.debug.print("Error initializing codec\n", .{});
             return error.CodecInitializationError;
         }
-        _ = c.vpx_img_wrap(&self.img, c.VPX_IMG_FMT_I420, width, height, 1, @ptrCast([*c]u8, yuv_buf));
+        _ = c.vpx_img_wrap(&self.img, c.VPX_IMG_FMT_I420, width, height, 1, @as([*c]u8, @ptrCast(yuv_buf)));
         return self;
     }
 
@@ -70,7 +70,7 @@ pub const VP8Enc = struct {
 
         var iter: ?*usize = null;
         while (true) {
-            const pkt = c.vpx_codec_get_cx_data(&self.codec, @ptrCast([*c]?*const anyopaque, &iter));
+            const pkt = c.vpx_codec_get_cx_data(&self.codec, @as([*c]?*const anyopaque, @ptrCast(&iter)));
             if (pkt == null) break;
 
             const p = pkt.*;
@@ -80,7 +80,7 @@ pub const VP8Enc = struct {
             const frame_size = p.data.frame.sz;
             // If you need keyframe
             // const keyframe = (p.data.frame.flags & c.VPX_FRAME_IS_KEY) != 0;
-            return @ptrCast([*]const u8, p.data.frame.buf)[0..frame_size];
+            return @as([*]const u8, @ptrCast(p.data.frame.buf))[0..frame_size];
         }
         unreachable;
     }
