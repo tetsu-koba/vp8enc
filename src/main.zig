@@ -28,7 +28,7 @@ pub fn I4202Vp8(input_file: []const u8, output_file: []const u8, width: u32, hei
     defer ivf_writer.deinit();
 
     const yuv_size = width * height * 3 / 2;
-    var yuv_buf = try alc.alloc(u8, yuv_size);
+    const yuv_buf = try alc.alloc(u8, yuv_size);
     defer alc.free(yuv_buf);
 
     var vp8enc = try VP8Enc.init(width, height, framerate, framerate_den, bitrate, keyframe_interval, yuv_buf);
@@ -61,7 +61,7 @@ pub fn main() !void {
 
     if (args.len < 8) {
         std.debug.print(usage, .{args[0]});
-        std.os.exit(1);
+        std.posix.exit(1);
     }
     const input_file = args[1];
     const output_file = args[2];
