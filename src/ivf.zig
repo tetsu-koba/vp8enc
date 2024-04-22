@@ -20,7 +20,7 @@ pub const IVFHeader = extern struct {
     unused: u32, // Reserved for future use (set to 0)
 };
 
-pub const IVFFrameHeader = struct {
+pub const IVFFrameHeader = extern struct {
     frame_size: u32, // Size of the frame data in bytes
     timestamp: u64, // Presentation timestamp of the frame in time units
 };
